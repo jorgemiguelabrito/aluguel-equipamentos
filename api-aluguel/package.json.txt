@@ -1,0 +1,9 @@
+{
+  "name": "api-aluguel-simples",
+  "version": "1.0.0",
+  "description": "API simples para o trabalho de ADS",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  }
+}
