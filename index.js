@@ -141,11 +141,12 @@ app.delete('/api/equipamentos/:id', async (req, res) => {
 // --- CRUD Pessoas (Item 6 da avaliação) ---
 app.get('/api/pessoas', async (req, res) => {
     try {
+        // *** CORREÇÃO AQUI: Removido o 's' que estava sobrando ***
         const query = `
             SELECT p.pessoa_id, p.nome, p.cpf, p.nascimento, p.telefone, t.descricao AS tipo_pessoa
             FROM cadastro.tbPessoas p
             JOIN dominio.tbPessoaTipo t ON p.pessoa_tipo_id = t.pessoa_tipo_id
-s           ORDER BY p.nome ASC
+            ORDER BY p.nome ASC
         `;
         const { rows } = await pool.query(query);
         res.json(rows);
@@ -175,7 +176,7 @@ app.put('/api/pessoas/:id', async (req, res) => {
     const { id } = req.params;
     const { nome, cpf, nascimento, telefone, pessoa_tipo_id } = req.body;
     try {
-        const { rows } = await pool.query(
+      mande o código para min com as altereção devidas   const { rows } = await pool.query(
             'UPDATE cadastro.tbPessoas SET nome = $1, cpf = $2, nascimento = $3, telefone = $4, pessoa_tipo_id = $5 WHERE pessoa_id = $6 RETURNING *',
             [nome, cpf, nascimento, telefone, pessoa_tipo_id, id]
         );
@@ -190,7 +191,7 @@ app.delete('/api/pessoas/:id', async (req, res) => {
         res.status(204).send();
     } catch (error) {
         res.status(500).json({ error: error.message });
-    }
+  	}
 });
 
 
