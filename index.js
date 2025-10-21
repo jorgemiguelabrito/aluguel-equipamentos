@@ -1,6 +1,7 @@
 // --- Importação dos Módulos Essenciais ---
 const express = require('express');
 const path = require('path'); // Módulo para lidar com caminhos de arquivos
+const bcrypt = require('bcryptjs'); // Para criptografar senhas
 const { pool } = require('./db.js'); // Nossa conexão com o banco de dados
 
 const app = express();
@@ -18,16 +19,24 @@ app.get('/', (req, res) => {
 // =================== ROTAS DA API (O "CÉREBRO") ====================
 // ===================================================================
 
-// --- Rota de Login ---
+// --- Rota de Login (COM BCRYPT) ---
 app.post('/api/login', async (req, res) => {
     const { login, senha } = req.body;
     try {
         const { rows } = await pool.query(
-            'SELECT usuario_id, nome, login FROM seguranca.tbUsuarios WHERE login = $1 AND senha = $2',
-            [login, senha]
+            'SELECT usuario_id, nome, login, senha FROM seguranca.tbUsuarios WHERE login = $1',
+            [login]
         );
-        if (rows.length > 0) {
-            res.json({ success: true, usuario: rows[0] });
+        
+        if (rows.length === 0) {
+            return res.status(401).json({ success: false, message: 'Login ou senha inválidos' });
+        }
+        
+        const usuario = rows[0];
+        const senhaValida = await bcrypt.compare(senha, usuario.senha);
+        
+        if (senhaValida) {
+            res.json({ success: true, usuario: { usuario_id: usuario.usuario_id, nome: usuario.nome } });
         } else {
             res.status(401).json({ success: false, message: 'Login ou senha inválidos' });
         }
@@ -47,12 +56,15 @@ app.get('/api/usuarios', async (req, res) => {
     }
 });
 
+// [C]reate - Incluir usuário (COM BCRYPT)
 app.post('/api/usuarios', async (req, res) => {
     const { nome, login, senha } = req.body;
     try {
+        const salt = await bcrypt.genSalt(10);
+        const hashSenha = await bcrypt.hash(senha, salt);
         const { rows } = await pool.query(
             'INSERT INTO seguranca.tbUsuarios (nome, login, senha) VALUES ($1, $2, $3) RETURNING usuario_id, nome, login',
-            [nome, login, senha]
+            [nome, login, hashSenha]
         );
         res.status(201).json(rows[0]);
     } catch (error) {
@@ -181,14 +193,11 @@ app.delete('/api/pessoas/:id', async (req, res) => {
 app.post('/api/alugueis', async (req, res) => {
     const { pessoa_id, usuario_id, data_prevista_devolucao, valor_total, itens } = req.body;
 
-    // Pega uma conexão do pool para usar na transação
     const client = await pool.connect();
 
     try {
-        // Inicia a transação
         await client.query('BEGIN');
 
-        // 1. Insere o registro principal na tbAluguel
         const aluguelQuery = `
             INSERT INTO aluguel.tbAluguel (pessoa_id, usuario_id, data_prevista_devolucao, valor_total, status)
             VALUES ($1, $2, $3, $4, 'Ativo')
@@ -197,27 +206,22 @@ app.post('/api/alugueis', async (req, res) => {
         const aluguelResult = await client.query(aluguelQuery, [pessoa_id, usuario_id, data_prevista_devolucao, valor_total]);
         const novoAluguelId = aluguelResult.rows[0].aluguel_id;
 
-        // 2. Insere cada item na tbAluguelItens
         const itensQuery = `
             INSERT INTO aluguel.tbAluguelItens (aluguel_id, equipamento_id, valor_diaria_no_aluguel)
             VALUES ($1, $2, $3);
         `;
-        // Usamos um loop para inserir cada item que veio do front-end
         for (const item of itens) {
             await client.query(itensQuery, [novoAluguelId, item.equipamento_id, item.valor_diaria_no_aluguel]);
         }
 
-        // Se tudo deu certo até aqui, confirma a transação
         await client.query('COMMIT');
         res.status(201).json({ success: true, message: 'Aluguel salvo com sucesso!', aluguel_id: novoAluguelId });
 
     } catch (error) {
-        // Se qualquer uma das queries falhar, desfaz tudo (rollback)
         await client.query('ROLLBACK');
         console.error('Erro ao salvar aluguel:', error);
         res.status(500).json({ error: 'Erro ao salvar o aluguel no banco de dados.' });
     } finally {
-        // Libera a conexão de volta para o pool, independentemente de sucesso ou falha
         client.release();
     }
 });
