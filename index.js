@@ -1,25 +1,56 @@
-// --- Configurações Iniciais ---
+// --- Importação dos Módulos Essenciais ---
 const express = require('express');
+const path = require('path'); // Módulo para lidar com caminhos de arquivos
+const { pool } = require('./db.js'); // Nossa conexão com o banco de dados
+
 const app = express();
-const { pool } = require('./db.js'); // Importa a conexão com o banco
 
-// --- Middlewares (Configurações do Express) ---
-app.use(express.json()); // Habilita o Express para entender requisições com corpo em JSON
-app.use(express.static('public')); // Habilita o Express para servir arquivos estáticos da pasta 'public'
+// --- Configuração do Middleware ---
+// Habilita o Express para interpretar o corpo de requisições JSON
+app.use(express.json());
+
+// --- CORREÇÃO: Servindo os arquivos estáticos (front-end) ---
+// Esta é a forma mais robusta de dizer ao Express onde estão seus arquivos HTML.
+// Ele cria um caminho absoluto para a pasta 'public', que funciona em qualquer servidor.
+app.use(express.static(path.join(__dirname, 'public')));
 
 
-// ----------- ROTAS DA API (Endpoints) -----------
+// ===================================================================
+// =================== ROTAS DA API (O "CÉREBRO") ====================
+// ===================================================================
 
-// --- CRUD Usuários ---
+// --- Rota de Login (Item 7 e 8 da avaliação) ---
+app.post('/api/login', async (req, res) => {
+    const { login, senha } = req.body;
+    try {
+        // ATENÇÃO: A consulta abaixo é insegura para produção!
+        // O ideal é usar bcrypt para comparar senhas criptografadas.
+        const { rows } = await pool.query(
+            'SELECT usuario_id, nome, login FROM seguranca.tbUsuarios WHERE login = $1 AND senha = $2',
+            [login, senha]
+        );
+        
+        if (rows.length > 0) {
+            // Login bem-sucedido
+            res.json({ success: true, usuario: rows[0] });
+        } else {
+            // Login falhou
+            res.status(401).json({ success: false, message: 'Login ou senha inválidos' });
+        }
+    } catch (error) {
+        console.error('Erro no login:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
+// --- CRUD Usuários (Item 2 da avaliação) ---
 // [R]ead - Listar todos os usuários
 app.get('/api/usuarios', async (req, res) => {
     try {
         const { rows } = await pool.query('SELECT usuario_id, nome, login FROM seguranca.tbUsuarios ORDER BY nome ASC');
         res.json(rows);
     } catch (error) {
-        console.error('Erro ao listar usuários:', error);
-        res.status(500).json({ error: 'Erro interno no servidor' });
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -33,30 +64,22 @@ app.post('/api/usuarios', async (req, res) => {
         );
         res.status(201).json(rows[0]);
     } catch (error) {
-        console.error('Erro ao incluir usuário:', error);
-        if (error.code === '23505') {
-            return res.status(400).json({ error: 'Este login já está em uso.' });
-        }
-        res.status(500).json({ error: 'Erro interno no servidor' });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// [U]pdate - Editar um usuário existente
+// [U]pdate - Editar um usuário
 app.put('/api/usuarios/:id', async (req, res) => {
     const { id } = req.params;
     const { nome, login } = req.body;
     try {
         const { rows } = await pool.query(
-            'UPDATE seguranca.tbUsuarios SET nome = $1, login = $2, atualizado_em = NOW() WHERE usuario_id = $3 RETURNING usuario_id, nome, login',
+            'UPDATE seguranca.tbUsuarios SET nome = $1, login = $2 WHERE usuario_id = $3 RETURNING usuario_id, nome, login',
             [nome, login, id]
         );
         res.json(rows[0]);
     } catch (error) {
-        console.error('Erro ao editar usuário:', error);
-        if (error.code === '23505') {
-            return res.status(400).json({ error: 'Este login já está em uso por outro usuário.' });
-        }
-        res.status(500).json({ error: 'Erro interno no servidor' });
+        res.status(500).json({ error: error.message });
     }
 });
 
@@ -65,43 +88,18 @@ app.delete('/api/usuarios/:id', async (req, res) => {
     const { id } = req.params;
     try {
         await pool.query('DELETE FROM seguranca.tbUsuarios WHERE usuario_id = $1', [id]);
-        res.status(204).send();
+        res.status(204).send(); // 204 = No Content (sucesso sem corpo de resposta)
     } catch (error) {
-        console.error('Erro ao excluir usuário:', error);
-        res.status(500).json({ error: 'Erro interno no servidor' });
+        res.status(500).json({ error: error.message });
     }
 });
 
-// --- Rota de Login ---
-
-app.post('/api/login', async (req, res) => {
-    const { login, senha } = req.body;
-    try {
-        const { rows } = await pool.query(
-            'SELECT usuario_id, nome, login FROM seguranca.tbUsuarios WHERE login = $1 AND senha = $2',
-            [login, senha]
-        );
-        if (rows.length > 0) {
-            res.json({ success: true, usuario: rows[0] });
-        } else {
-            res.status(401).json({ success: false, message: 'Login ou senha inválidos' });
-        }
-    } catch (error) {
-        console.error('Erro no login:', error);
-        res.status(500).json({ error: 'Erro interno no servidor' });
-    }
-});
-
-// --- CRUD Equipamentos ---
-
+// --- CRUD Equipamentos (Item 4 da avaliação) ---
 app.get('/api/equipamentos', async (req, res) => {
     try {
         const { rows } = await pool.query('SELECT * FROM material.tbEquipamento ORDER BY descricao ASC');
         res.json(rows);
-    } catch (error) {
-        console.error('Erro ao listar equipamentos:', error);
-        res.status(500).json({ error: 'Erro interno no servidor' });
-    }
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 app.post('/api/equipamentos', async (req, res) => {
@@ -112,10 +110,7 @@ app.post('/api/equipamentos', async (req, res) => {
             [descricao, valor_diaria]
         );
         res.status(201).json(rows[0]);
-    } catch (error) {
-        console.error('Erro ao adicionar equipamento:', error);
-        res.status(500).json({ error: 'Erro interno no servidor' });
-    }
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 app.put('/api/equipamentos/:id', async (req, res) => {
@@ -127,10 +122,7 @@ app.put('/api/equipamentos/:id', async (req, res) => {
             [descricao, valor_diaria, id]
         );
         res.json(rows[0]);
-    } catch (error) {
-        console.error('Erro ao editar equipamento:', error);
-        res.status(500).json({ error: 'Erro interno no servidor' });
-    }
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
 app.delete('/api/equipamentos/:id', async (req, res) => {
@@ -138,42 +130,32 @@ app.delete('/api/equipamentos/:id', async (req, res) => {
     try {
         await pool.query('DELETE FROM material.tbEquipamento WHERE equipamento_id = $1', [id]);
         res.status(204).send();
-    } catch (error) {
-        console.error('Erro ao excluir equipamento:', error);
-        res.status(500).json({ error: 'Erro interno no servidor' });
-    }
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// --- CRUD Pessoas ---
-
-// Rota auxiliar para pegar os Tipos de Pessoa
-app.get('/api/pessoatipos', async (req, res) => {
-    try {
-        const { rows } = await pool.query('SELECT * FROM dominio.tbPessoaTipo ORDER BY descricao');
-        res.json(rows);
-    } catch (error) {
-        console.error('Erro ao buscar tipos de pessoa:', error);
-        res.status(500).json({ error: 'Erro interno no servidor' });
-    }
-});
-
-// [R]ead - Listar todas as pessoas
+// --- CRUD Pessoas (Item 6 da avaliação) ---
 app.get('/api/pessoas', async (req, res) => {
     try {
-        const { rows } = await pool.query(`
-            SELECT p.pessoa_id, p.nome, p.cpf, p.telefone, p.nascimento, t.descricao AS tipo_descricao
+        // Usamos um JOIN para buscar também a descrição do tipo da pessoa
+        const query = `
+            SELECT p.pessoa_id, p.nome, p.cpf, p.nascimento, p.telefone, t.descricao AS tipo_pessoa
             FROM cadastro.tbPessoas p
             JOIN dominio.tbPessoaTipo t ON p.pessoa_tipo_id = t.pessoa_tipo_id
             ORDER BY p.nome ASC
-        `);
+        `;
+        const { rows } = await pool.query(query);
         res.json(rows);
-    } catch (error) {
-        console.error('Erro ao listar pessoas:', error);
-        res.status(500).json({ error: 'Erro interno no servidor' });
-    }
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// [C]reate - Adicionar uma nova pessoa
+// Rota para buscar apenas os tipos de pessoa (para preencher o dropdown)
+app.get('/api/pessoatipos', async (req, res) => {
+    try {
+        const { rows } = await pool.query('SELECT * FROM dominio.tbPessoaTipo ORDER BY descricao ASC');
+        res.json(rows);
+    } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
 app.post('/api/pessoas', async (req, res) => {
     const { nome, cpf, nascimento, telefone, pessoa_tipo_id } = req.body;
     try {
@@ -182,52 +164,31 @@ app.post('/api/pessoas', async (req, res) => {
             [nome, cpf, nascimento, telefone, pessoa_tipo_id]
         );
         res.status(201).json(rows[0]);
-    } catch (error) {
-        console.error('Erro ao adicionar pessoa:', error);
-        if (error.code === '23505') {
-            return res.status(400).json({ error: 'Este CPF já está cadastrado.' });
-        }
-        res.status(500).json({ error: 'Erro interno no servidor' });
-    }
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// [U]pdate - Editar uma pessoa
 app.put('/api/pessoas/:id', async (req, res) => {
     const { id } = req.params;
     const { nome, cpf, nascimento, telefone, pessoa_tipo_id } = req.body;
     try {
         const { rows } = await pool.query(
-            'UPDATE cadastro.tbPessoas SET nome=$1, cpf=$2, nascimento=$3, telefone=$4, pessoa_tipo_id=$5 WHERE pessoa_id=$6 RETURNING *',
+            'UPDATE cadastro.tbPessoas SET nome = $1, cpf = $2, nascimento = $3, telefone = $4, pessoa_tipo_id = $5 WHERE pessoa_id = $6 RETURNING *',
             [nome, cpf, nascimento, telefone, pessoa_tipo_id, id]
         );
         res.json(rows[0]);
-    } catch (error) {
-        console.error('Erro ao editar pessoa:', error);
-        if (error.code === '23505') {
-            return res.status(400).json({ error: 'Este CPF já pertence a outra pessoa.' });
-        }
-        res.status(500).json({ error: 'Erro interno no servidor' });
-    }
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// [D]elete - Excluir uma pessoa
 app.delete('/api/pessoas/:id', async (req, res) => {
     const { id } = req.params;
     try {
         await pool.query('DELETE FROM cadastro.tbPessoas WHERE pessoa_id = $1', [id]);
         res.status(204).send();
-    } catch (error) {
-        console.error('Erro ao excluir pessoa:', error);
-        if (error.code === '23503') {
-            return res.status(400).json({ error: 'Não é possível excluir esta pessoa, pois ela está associada a um aluguel.' });
-        }
-        res.status(500).json({ error: 'Erro interno no servidor' });
-    }
+    } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// ---------------------------------------------------------------
 
-// --- Inicialização do Servidor --- // Teste
+// --- Inicialização do Servidor ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
