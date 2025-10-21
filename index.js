@@ -6,18 +6,11 @@ const { pool } = require('./db.js'); // Nossa conexão com o banco de dados
 const app = express();
 
 // --- Configuração do Middleware ---
-// Habilita o Express para interpretar o corpo de requisições JSON
 app.use(express.json());
-
-// --- CORREÇÃO: Servindo os arquivos estáticos (front-end) ---
-// Diz ao Express para procurar arquivos estáticos DENTRO da pasta 'Public'
 app.use(express.static(path.join(__dirname, 'Public')));
 
 // --- Rota principal (Root) ---
-// Envia o 'index.html' (página de login)
-// quando alguém acessar a URL principal.
 app.get('/', (req, res) => {
-    // Busca o 'index.html' DENTRO da pasta 'Public'
     res.sendFile(path.join(__dirname, 'Public', 'index.html'));
 });
 
@@ -25,21 +18,17 @@ app.get('/', (req, res) => {
 // =================== ROTAS DA API (O "CÉREBRO") ====================
 // ===================================================================
 
-// --- Rota de Login (Item 7 e 8 da avaliação) ---
+// --- Rota de Login ---
 app.post('/api/login', async (req, res) => {
     const { login, senha } = req.body;
     try {
-        // ATENÇÃO: A consulta abaixo é insegura para produção!
         const { rows } = await pool.query(
             'SELECT usuario_id, nome, login FROM seguranca.tbUsuarios WHERE login = $1 AND senha = $2',
             [login, senha]
         );
-        
         if (rows.length > 0) {
-            // Login bem-sucedido
             res.json({ success: true, usuario: rows[0] });
         } else {
-            // Login falhou
             res.status(401).json({ success: false, message: 'Login ou senha inválidos' });
         }
     } catch (error) {
@@ -48,8 +37,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// --- CRUD Usuários (Item 2 da avaliação) ---
-// [R]ead - Listar todos os usuários
+// --- CRUD Usuários ---
 app.get('/api/usuarios', async (req, res) => {
     try {
         const { rows } = await pool.query('SELECT usuario_id, nome, login FROM seguranca.tbUsuarios ORDER BY nome ASC');
@@ -59,7 +47,6 @@ app.get('/api/usuarios', async (req, res) => {
     }
 });
 
-// [C]reate - Incluir um novo usuário
 app.post('/api/usuarios', async (req, res) => {
     const { nome, login, senha } = req.body;
     try {
@@ -73,7 +60,6 @@ app.post('/api/usuarios', async (req, res) => {
     }
 });
 
-// [U]pdate - Editar um usuário
 app.put('/api/usuarios/:id', async (req, res) => {
     const { id } = req.params;
     const { nome, login } = req.body;
@@ -88,18 +74,17 @@ app.put('/api/usuarios/:id', async (req, res) => {
     }
 });
 
-// [D]elete - Excluir um usuário
 app.delete('/api/usuarios/:id', async (req, res) => {
     const { id } = req.params;
     try {
         await pool.query('DELETE FROM seguranca.tbUsuarios WHERE usuario_id = $1', [id]);
-        res.status(204).send(); // 204 = No Content (sucesso sem corpo de resposta)
+        res.status(204).send();
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
 });
 
-// --- CRUD Equipamentos (Item 4 da avaliação) ---
+// --- CRUD Equipamentos ---
 app.get('/api/equipamentos', async (req, res) => {
     try {
         const { rows } = await pool.query('SELECT * FROM material.tbEquipamento ORDER BY descricao ASC');
@@ -138,7 +123,7 @@ app.delete('/api/equipamentos/:id', async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// --- CRUD Pessoas (Item 6 da avaliação) ---
+// --- CRUD Pessoas ---
 app.get('/api/pessoas', async (req, res) => {
     try {
         const query = `
@@ -152,7 +137,6 @@ app.get('/api/pessoas', async (req, res) => {
     } catch (error) { res.status(500).json({ error: error.message }); }
 });
 
-// Rota para buscar apenas os tipos de pessoa (para preencher o dropdown)
 app.get('/api/pessoatipos', async (req, res) => {
     try {
         const { rows } = await pool.query('SELECT * FROM dominio.tbPessoaTipo ORDER BY descricao ASC');
@@ -193,9 +177,55 @@ app.delete('/api/pessoas/:id', async (req, res) => {
   	}
 });
 
+// --- ROTA PARA CRIAR UM NOVO ALUGUEL ---
+app.post('/api/alugueis', async (req, res) => {
+    const { pessoa_id, usuario_id, data_prevista_devolucao, valor_total, itens } = req.body;
+
+    // Pega uma conexão do pool para usar na transação
+    const client = await pool.connect();
+
+    try {
+        // Inicia a transação
+        await client.query('BEGIN');
+
+        // 1. Insere o registro principal na tbAluguel
+        const aluguelQuery = `
+            INSERT INTO aluguel.tbAluguel (pessoa_id, usuario_id, data_prevista_devolucao, valor_total, status)
+            VALUES ($1, $2, $3, $4, 'Ativo')
+            RETURNING aluguel_id;
+        `;
+        const aluguelResult = await client.query(aluguelQuery, [pessoa_id, usuario_id, data_prevista_devolucao, valor_total]);
+        const novoAluguelId = aluguelResult.rows[0].aluguel_id;
+
+        // 2. Insere cada item na tbAluguelItens
+        const itensQuery = `
+            INSERT INTO aluguel.tbAluguelItens (aluguel_id, equipamento_id, valor_diaria_no_aluguel)
+            VALUES ($1, $2, $3);
+        `;
+        // Usamos um loop para inserir cada item que veio do front-end
+        for (const item of itens) {
+            await client.query(itensQuery, [novoAluguelId, item.equipamento_id, item.valor_diaria_no_aluguel]);
+        }
+
+        // Se tudo deu certo até aqui, confirma a transação
+        await client.query('COMMIT');
+        res.status(201).json({ success: true, message: 'Aluguel salvo com sucesso!', aluguel_id: novoAluguelId });
+
+    } catch (error) {
+        // Se qualquer uma das queries falhar, desfaz tudo (rollback)
+        await client.query('ROLLBACK');
+        console.error('Erro ao salvar aluguel:', error);
+        res.status(500).json({ error: 'Erro ao salvar o aluguel no banco de dados.' });
+    } finally {
+        // Libera a conexão de volta para o pool, independentemente de sucesso ou falha
+        client.release();
+    }
+});
+
 
 // --- Inicialização do Servidor ---
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Servidor rodando com sucesso na porta ${PORT}`);
 });
+

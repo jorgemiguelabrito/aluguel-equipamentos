@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Registrar Aluguel</title>
+    <!-- CSS copiado de 'pessoas.html' para manter o padrão -->
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 20px; background-color: #f0f2f5; color: #333; }
         h1, h2 { color: #1c1e21; }
@@ -36,6 +37,7 @@
     <a href="/home.html">← Voltar para Início</a>
     <h1>Registrar Novo Aluguel</h1>
 
+    <!-- Formulário Principal -->
     <form id="form-aluguel" class="form-container">
         <h2>1. Dados Principais</h2>
         <div class="form-row">
@@ -51,6 +53,7 @@
             </div>
         </div>
 
+        <!-- Seção para adicionar equipamentos -->
         <h2 style="margin-top: 30px;">2. Equipamentos</h2>
         <div class="form-row">
             <div>
@@ -64,6 +67,7 @@
             </div>
         </div>
 
+        <!-- Tabela/Carrinho de Itens -->
         <h2 style="margin-top: 30px;">3. Itens do Aluguel</h2>
         <table>
             <thead>
@@ -74,9 +78,11 @@
                 </tr>
             </thead>
             <tbody id="corpo-tabela-itens">
-                </tbody>
+                <!-- Itens adicionados aparecerão aqui -->
+            </tbody>
         </table>
 
+        <!-- Total e Botão Salvar -->
         <div style="margin-top: 30px;">
             <p id="total-aluguel">Valor Total (diária): R$ 0,00</p>
             <button type="submit">Salvar Aluguel</button>
@@ -215,13 +221,9 @@
             });
 
             // --- EVENTO 3: Salvar o Aluguel (Enviar para API) ---
-            form.addEventListener('submit', (event) => {
+            form.addEventListener('submit', async (event) => {
                 event.preventDefault();
                 
-                // *** PRÓXIMO PASSO ESTÁ AQUI ***
-                // Por enquanto, este código apenas vai mostrar o que *seria* enviado.
-                // O back-end (index.js) ainda não tem a rota '/api/alugueis'.
-
                 const dadosParaEnviar = {
                     pessoa_id: parseInt(selectCliente.value),
                     usuario_id: usuarioLogado.usuario_id,
@@ -239,14 +241,7 @@
                 if (dadosParaEnviar.itens.length === 0) {
                     alert('Adicione pelo menos um equipamento.'); return;
                 }
-
-                // Log para debug (podemos remover depois)
-                console.log('Dados que serão enviados para a API:', JSON.stringify(dadosParaEnviar, null, 2));
                 
-                alert('PRÓXIMO PASSO: Agora precisamos criar a rota POST /api/alugueis no index.js para receber estes dados!');
-                
-                // *** DESCOMENTE AS LINHAS ABAIXO QUANDO A API ESTIVER PRONTA ***
-                /*
                 try {
                     const response = await fetch('/api/alugueis', {
                         method: 'POST',
@@ -266,7 +261,6 @@
                     console.error('Erro ao salvar aluguel:', error);
                     alert(`Não foi possível salvar: ${error.message}`);
                 }
-                */
             });
 
             // --- INICIALIZAÇÃO ---
