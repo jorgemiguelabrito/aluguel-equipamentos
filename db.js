@@ -5,7 +5,7 @@ const pool = new Pool({
     //
     // SUA URL COMPLETA FOI COLADA AQUI
     // 
-    connectionString: 'postgresql://aluguel_de_equipamentos_de_ti_user:LjGQVY0WmyohT8JMBGY4x57PIv2qjTy2@dpg-d3ro5b95pdvs73fsa9cg-a.oregon-postgres.render.com/aluguel_de_equipamentos_de_ti',
+    connectionString: 'dpg-d3ro5b95pdvs73fsa9cg-a.oregon-postgres.render.com',
     //
     
     // Configuração necessária para conexões SSL com o Render
