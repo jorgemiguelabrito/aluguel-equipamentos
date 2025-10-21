@@ -10,23 +10,16 @@ const app = express();
 app.use(express.json());
 
 // --- CORREÇÃO: Servindo os arquivos estáticos (front-end) ---
-// Esta é a forma mais robusta de dizer ao Express onde estão seus arquivos HTML.
-// CORREÇÃO AQUI: Removido 'public' para servir da pasta raiz
+// Servindo arquivos da pasta raiz (onde estão seu index.html, etc.)
 app.use(express.static(__dirname));
 
 // --- Rota principal (Root) ---
-// Adicione esta rota para consertar o "Cannot GET /"
-// Ela diz ao servidor para enviar o 'index.html' (página de login)
+// Envia o 'index.html' (página de login)
 // quando alguém acessar a URL principal.
 app.get('/', (req, res) => {
-    // CORREÇÃO AQUI: Removido 'public' para buscar o index.html na raiz
+    // Busca o 'index.html' na pasta raiz
     res.sendFile(path.join(__dirname, 'index.html'));
 });
-
-// ===================================================================
-// =================== ROTAS DA API (O "CÉREBRO") ====================
-// ===================================================================
-// ... (deixe o resto das suas rotas de API aqui) ...
 
 // ===================================================================
 // =================== ROTAS DA API (O "CÉREBRO") ====================
@@ -107,102 +100,4 @@ app.delete('/api/usuarios/:id', async (req, res) => {
     }
 });
 
-// --- CRUD Equipamentos (Item 4 da avaliação) ---
-app.get('/api/equipamentos', async (req, res) => {
-    try {
-        const { rows } = await pool.query('SELECT * FROM material.tbEquipamento ORDER BY descricao ASC');
-        res.json(rows);
-    } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-app.post('/api/equipamentos', async (req, res) => {
-    const { descricao, valor_diaria } = req.body;
-    try {
-        const { rows } = await pool.query(
-            'INSERT INTO material.tbEquipamento (descricao, valor_diaria) VALUES ($1, $2) RETURNING *',
-            [descricao, valor_diaria]
-        );
-        res.status(201).json(rows[0]);
-D   } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-app.put('/api/equipamentos/:id', async (req, res) => {
-    const { id } = req.params;
-    const { descricao, valor_diaria } = req.body;
-    try {
-        const { rows } = await pool.query(
-            'UPDATE material.tbEquipamento SET descricao = $1, valor_diaria = $2 WHERE equipamento_id = $3 RETURNING *',
-            [descricao, valor_diaria, id]
-        );
-        res.json(rows[0]);
-    } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-app.delete('/api/equipamentos/:id', async (req, res) => {
-    const { id } = req.params;
-    try {
-        await pool.query('DELETE FROM material.tbEquipamento WHERE equipamento_id = $1', [id]);
-        res.status(204).send();
-    } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-// --- CRUD Pessoas (Item 6 da avaliação) ---
-app.get('/api/pessoas', async (req, res) => {
-    try {
-        // Usamos um JOIN para buscar também a descrição do tipo da pessoa
-        const query = `
-            SELECT p.pessoa_id, p.nome, p.cpf, p.nascimento, p.telefone, t.descricao AS tipo_pessoa
-            FROM cadastro.tbPessoas p
-            JOIN dominio.tbPessoaTipo t ON p.pessoa_tipo_id = t.pessoa_tipo_id
-s           ORDER BY p.nome ASC
-        `;
-        const { rows } = await pool.query(query);
-        res.json(rows);
-    } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-// Rota para buscar apenas os tipos de pessoa (para preencher o dropdown)
-app.get('/api/pessoatipos', async (req, res) => {
-    try {
-        const { rows } = await pool.query('SELECT * FROM dominio.tbPessoaTipo ORDER BY descricao ASC');
-        res.json(rows);
-  f } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-app.post('/api/pessoas', async (req, res) => {
-    const { nome, cpf, nascimento, telefone, pessoa_tipo_id } = req.body;
-    try {
-        const { rows } = await pool.query(
-            'INSERT INTO cadastro.tbPessoas (nome, cpf, nascimento, telefone, pessoa_tipo_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-Em           [nome, cpf, nascimento, telefone, pessoa_tipo_id]
-        );
-        res.status(201).json(rows[0]);
-    } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-app.put('/api/pessoas/:id', async (req, res) => {
-    const { id } = req.params;
-    const { nome, cpf, nascimento, telefone, pessoa_tipo_id } = req.body;
-    try {
-        const { rows } = await pool.query(
-            'UPDATE cadastro.tbPessoas SET nome = $1, cpf = $2, nascimento = $3, telefone = $4, pessoa_tipo_id = $5 WHERE pessoa_id = $6 RETURNING *',
-            [nome, cpf, nascimento, telefone, pessoa_tipo_id, id]
-        );
-        res.json(rows[0]);
-    } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-app.delete('/api/pessoas/:id', async (req, res) => {
-Request   const { id } = req.params;
-    try {
-        await pool.query('DELETE FROM cadastro.tbPessoas WHERE pessoa_id = $1', [id]);
-        res.status(204).send();
-    } catch (error) { res.status(500).json({ error: error.message }); }
-});
-
-
-// --- Inicialização do Servidor ---
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-E   console.log(`Servidor rodando na porta ${PORT}`);
-});
+// --- CRUD
