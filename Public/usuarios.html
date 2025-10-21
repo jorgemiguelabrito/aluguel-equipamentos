@@ -4,170 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cadastro de Usuários</title>
-    
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            margin: 20px;
-            background-color: #f0f2f5;
-            color: #333;
-        }
-        h1, h2 {
-            color: #1c1e21;
-        }
-        
-        /* Estilização do Formulário */
-        #form-usuario {
-            background-color: #ffffff;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            margin-bottom: 30px;
-        }
-        #form-usuario div {
-            margin-bottom: 15px;
-        }
-        #form-usuario label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 600;
-        }
-        #form-usuario input[type="text"],
-        #form-usuario input[type="password"] {
-            width: 100%;
-            padding: 10px;
-            box-sizing: border-box; /* Garante que o padding não quebre o layout */
-            border: 1px solid #dddfe2;
-            border-radius: 6px;
-            font-size: 16px;
-        }
-        #form-usuario input:focus {
-            border-color: #007bff;
-            box-shadow: 0 0 0 2px rgba(0,123,255,0.2);
-            outline: none;
-        }
-        #form-usuario input:disabled {
-            background-color: #f0f2f5;
-            color: #aaa;
-        }
-
-        /* Container para os botões do formulário */
-        .form-buttons {
-            display: flex;
-            gap: 10px; /* Espaço entre os botões */
-        }
-
-        #form-usuario button {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-        }
-        button[type="submit"] {
-            background-color: #007bff;
-            color: white;
-        }
-        button[type="submit"]:hover {
-            background-color: #0056b3;
-        }
-        #btn-cancelar {
-            background-color: #f0f2f5;
-            color: #333;
-        }
-        #btn-cancelar:hover {
-            background-color: #e4e6e9;
-        }
-        
-        /* Estilização da Tabela */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background-color: #fff;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-            border-radius: 8px;
-            overflow: hidden; /* Para o border-radius funcionar nas bordas */
-        }
-        table th, table td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #dddfe2;
-            text-align: left;
-        }
-        table th {
-            background-color: #f0f2f5;
-            font-weight: 600;
-        }
-        table tr:last-child td {
-            border-bottom: none;
-        }
-        
-        /* Botões de Ação na Tabela */
-        .action-buttons button {
-            padding: 6px 10px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 14px;
-            margin-right: 5px;
-        }
-        .btn-editar {
-            background-color: #ffc107;
-            color: #333;
-        }
-        .btn-excluir {
-            background-color: #dc3545;
-            color: white;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 20px; background-color: #f0f2f5; color: #333; } h1, h2 { color: #1c1e21; } a { color: #007bff; text-decoration: none; font-weight: 600; display: inline-block; margin-bottom: 20px; } form { background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 30px; } form div { margin-bottom: 15px; } form label { display: block; margin-bottom: 5px; font-weight: 600; } form input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #dddfe2; border-radius: 6px; font-size: 16px; } .form-buttons { display: flex; gap: 10px; } form button { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; } button[type="submit"] { background-color: #007bff; color: white; } #btn-cancelar { background-color: #f0f2f5; color: #333; } table { width: 100%; border-collapse: collapse; background-color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden; } table th, table td { padding: 12px 15px; border-bottom: 1px solid #dddfe2; text-align: left; } table th { background-color: #f0f2f5; font-weight: 600; } .action-buttons button { padding: 6px 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; margin-right: 5px; } .btn-editar { background-color: #ffc107; color: #333; } .btn-excluir { background-color: #dc3545; color: white; }
     </style>
 </head>
 <body>
-
+    <a href="/home.html">← Voltar para Início</a>
     <h1>Gestão de Usuários</h1>
-
     <form id="form-usuario">
         <input type="hidden" id="usuario_id">
-
-        <div>
-            <label for="nome">Nome:</label>
-            <input type="text" id="nome" name="nome" placeholder="Digite o nome completo" required>
-        </div>
-        <div>
-            <label for="login">Login:</label>
-            <input type="text" id="login" name="login" placeholder="Digite o login de acesso" required>
-        </div>
-        <div>
-            <label for="senha">Senha:</label>
-            <input type="password" id="senha" name="senha" placeholder="Digite a senha" required>
-        </div>
-        
+        <div><label for="nome">Nome:</label><input type="text" id="nome" required></div>
+        <div><label for="login">Login:</label><input type="text" id="login" required></div>
+        <div><label for="senha">Senha:</label><input type="password" id="senha" required></div>
         <div class="form-buttons">
             <button type="submit">Salvar</button>
             <button type="button" id="btn-cancelar">Cancelar</button>
         </div>
     </form>
-
-    
     <h2>Usuários Cadastrados</h2>
-
-    <table id="tabela-usuarios">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Nome</th>
-                <th>Login</th>
-                <th>Ações</th>
-            </tr>
-        </thead>
-        <tbody id="corpo-tabela">
-            </tbody>
+    <table>
+        <thead><tr><th>ID</th><th>Nome</th><th>Login</th><th>Ações</th></tr></thead>
+        <tbody id="corpo-tabela"></tbody>
     </table>
 
     <script>
-        // Aguarda o HTML ser completamente carregado antes de executar o script
         document.addEventListener('DOMContentLoaded', () => {
-            
-            // --- Referências aos elementos do HTML ---
             const form = document.getElementById('form-usuario');
             const corpoTabela = document.getElementById('corpo-tabela');
             const campoId = document.getElementById('usuario_id');
@@ -175,191 +36,115 @@
             const campoLogin = document.getElementById('login');
             const campoSenha = document.getElementById('senha');
             const btnSubmit = form.querySelector('button[type="submit"]');
-            const btnCancelar = document.getElementById('btn-cancelar');
-            
-            
-            // --- FUNÇÃO 1: Carregar e Listar os Usuários (GET) ---
-            // (Requisito: Ao carregar a página, buscar a lista e preencher a tabela)
-            
+
             const carregarUsuarios = async () => {
                 try {
-                    // 1. Faz a requisição GET para a nossa API
                     const response = await fetch('/api/usuarios');
                     if (!response.ok) {
-                        throw new Error('Erro ao buscar usuários');
+                        throw new Error('Falha ao buscar dados dos usuários do servidor.');
                     }
                     const usuarios = await response.json();
-                    
-                    // 2. Limpa a tabela antes de preencher
                     corpoTabela.innerHTML = '';
-                    
-                    // 3. Preenche a tabela com os dados
-                    usuarios.forEach(usuario => {
+                    usuarios.forEach(u => {
                         const tr = document.createElement('tr');
                         tr.innerHTML = `
-                            <td>${usuario.usuario_id}</td>
-                            <td>${usuario.nome}</td>
-                            <td>${usuario.login}</td>
+                            <td>${u.usuario_id}</td>
+                            <td>${u.nome}</td>
+                            <td>${u.login}</td>
                             <td class="action-buttons">
-                                <button class="btn-editar" data-id="${usuario.usuario_id}" data-nome="${usuario.nome}" data-login="${usuario.login}">Editar</button>
-                                <button class="btn-excluir" data-id="${usuario.usuario_id}">Excluir</button>
-                            </td>
-                        `;
+                                <button class="btn-editar" data-id="${u.usuario_id}" data-nome="${u.nome}" data-login="${u.login}">Editar</button>
+                                <button class="btn-excluir" data-id="${u.usuario_id}">Excluir</button>
+                            </td>`;
                         corpoTabela.appendChild(tr);
                     });
-
                 } catch (error) {
-                    console.error('Erro ao carregar usuários:', error);
-                    alert('Não foi possível carregar os usuários.');
+                    alert(error.message);
                 }
             };
-            
-            
-            // --- FUNÇÃO 2: Limpar o Formulário ---
-            
-            const limparFormulario = () => {
-                form.reset(); // Limpa os campos visíveis
-                campoId.value = ''; // Limpa o ID escondido
-                
-                campoSenha.disabled = false; // Reabilita o campo senha
-                campoSenha.required = true; // Senha volta a ser obrigatória
-                
-                btnSubmit.textContent = 'Salvar'; // Garante que o botão seja "Salvar"
-            };
-            
 
-            // --- FUNÇÃO 3: Preencher Formulário para Edição ---
-            // (Chamada pelo botão "Editar" da tabela)
-            
+            const limparFormulario = () => {
+                form.reset();
+                campoId.value = '';
+                campoSenha.required = true;
+                campoSenha.disabled = false;
+                btnSubmit.textContent = 'Salvar';
+            };
+
             const preencherFormulario = (id, nome, login) => {
                 campoId.value = id;
                 campoNome.value = nome;
                 campoLogin.value = login;
-                
-                campoSenha.disabled = true; // Desabilita o campo senha
-                campoSenha.required = false; // Senha não é obrigatória na edição
-                campoSenha.value = ''; // Limpa o campo senha
-                
-                btnSubmit.textContent = 'Atualizar'; // Muda o texto do botão
-                
-                // Rola a página para cima, para o formulário
+                campoSenha.required = false;
+                campoSenha.disabled = true;
+                campoSenha.value = '';
+                btnSubmit.textContent = 'Atualizar';
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             };
 
-            
-            // --- FUNÇÃO 4: Excluir um Usuário (DELETE) ---
-            // (Requisito: Botões "Excluir" na tabela)
-            
             const excluirUsuario = async (id) => {
-                if (!confirm(`Tem certeza que deseja excluir o usuário ID ${id}?`)) {
-                    return; // Cancela se o usuário clicar em "Não"
-                }
-                
+                if (!confirm('Tem certeza que deseja excluir este usuário?')) return;
                 try {
-                    const response = await fetch(`/api/usuarios/${id}`, {
-                        method: 'DELETE'
-                    });
-                    
+                    const response = await fetch(`/api/usuarios/${id}`, { method: 'DELETE' });
                     if (!response.ok) {
-                        throw new Error('Erro ao excluir usuário');
+                         throw new Error('Não foi possível excluir o usuário.');
                     }
-                    
-                    // Se deu certo, recarrega a lista de usuários
                     carregarUsuarios();
-                    
                 } catch (error) {
-                    console.error('Erro ao excluir usuário:', error);
-                    alert('Não foi possível excluir o usuário.');
+                    alert(error.message);
                 }
             };
 
-            
-            // --- EVENTO 1: Envio do Formulário (Salvar ou Atualizar) ---
-            // (Requisito: Ao clicar em "Salvar", usar POST ou PUT)
-            
-            form.addEventListener('submit', async (event) => {
-                event.preventDefault(); // Impede o recarregamento da página
-                
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
                 const id = campoId.value;
-                const nome = campoNome.value;
-                const login = campoLogin.value;
-                
-                let url = '/api/usuarios';
-                let method = 'POST';
-                let body = { nome, login };
-                
+                let body = { nome: campoNome.value, login: campoLogin.value };
+                let url = '/api/usuarios', method = 'POST';
+
                 if (id) {
-                    // --- Se tem ID, é uma ATUALIZAÇÃO (PUT) ---
                     url = `/api/usuarios/${id}`;
                     method = 'PUT';
-                    // O body já está correto { nome, login }
-                    
                 } else {
-                    // --- Se NÃO tem ID, é uma CRIAÇÃO (POST) ---
-                    const senha = campoSenha.value;
-                    if (!senha) {
-                        alert('Por favor, preencha a senha.');
+                    if (!campoSenha.value) {
+                        alert('O campo senha é obrigatório para novos usuários.');
                         return;
                     }
-                    body.senha = senha;
+                    body.senha = campoSenha.value;
                 }
-                
+
                 try {
                     const response = await fetch(url, {
                         method: method,
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(body)
                     });
-                    
+
                     if (!response.ok) {
                         const erro = await response.json();
-                        throw new Error(erro.error || 'Erro ao salvar usuário');
+                        throw new Error(erro.error || 'Erro desconhecido ao salvar.');
                     }
-                    
-                    // Se deu tudo certo:
+
                     limparFormulario();
-                    carregarUsuarios(); // Recarrega a tabela
-                    
+                    carregarUsuarios();
                 } catch (error) {
-                    console.error('Erro ao salvar:', error);
                     alert(`Não foi possível salvar: ${error.message}`);
                 }
             });
-            
-            
-            // --- EVENTO 2: Cliques na Tabela (para Editar ou Excluir) ---
-            
-            corpoTabela.addEventListener('click', (event) => {
-                const target = event.target; // Onde o usuário clicou
-                
-                // Se clicou no botão EDITAR
-                if (target.classList.contains('btn-editar')) {
-                    const id = target.dataset.id;
-                    const nome = target.dataset.nome;
-                    const login = target.dataset.login;
-                    preencherFormulario(id, nome, login);
-                }
-                
-                // Se clicou no botão EXCLUIR
-                if (target.classList.contains('btn-excluir')) {
-                    const id = target.dataset.id;
-                    excluirUsuario(id);
-                }
-            });
-            
-            
-            // --- EVENTO 3: Clique no Botão Cancelar ---
-            
-            btnCancelar.addEventListener('click', () => {
-                limparFormulario();
-            });
-            
 
-            // --- INICIALIZAÇÃO ---
-            // Chama a função para carregar os usuários assim que a página abre
+            corpoTabela.addEventListener('click', (e) => {
+                const target = e.target;
+                if (target.classList.contains('btn-editar')) {
+                    preencherFormulario(target.dataset.id, target.dataset.nome, target.dataset.login);
+                }
+                if (target.classList.contains('btn-excluir')) {
+                    excluirUsuario(target.dataset.id);
+                }
+            });
+
+            document.getElementById('btn-cancelar').addEventListener('click', limparFormulario);
+
             carregarUsuarios();
-            
         });
     </script>
 </body>
 </html>
+
