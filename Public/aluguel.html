@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrar Aluguel</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 20px; background-color: #f0f2f5; color: #333; }
+        h1, h2 { color: #1c1e21; }
+        a { color: #007bff; text-decoration: none; font-weight: 600; display: inline-block; margin-bottom: 20px; }
+        
+        .form-container, .summary-container {
+            background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 30px;
+        }
+        form div { margin-bottom: 15px; }
+        form label { display: block; margin-bottom: 5px; font-weight: 600; }
+        form input, form select { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #dddfe2; border-radius: 6px; font-size: 16px; }
+        
+        .form-row { display: flex; gap: 20px; }
+        .form-row > div { flex: 1; }
+
+        .form-buttons { display: flex; gap: 10px; }
+        form button { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; }
+        button[type="submit"] { background-color: #28a745; color: white; font-size: 18px; padding: 12px 20px; }
+        #btn-adicionar { background-color: #007bff; color: white; }
+
+        table { width: 100%; border-collapse: collapse; background-color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden; }
+        table th, table td { padding: 12px 15px; border-bottom: 1px solid #dddfe2; text-align: left; }
+        table th { background-color: #f0f2f5; font-weight: 600; }
+        .action-buttons button { background-color: #dc3545; color: white; padding: 6px 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+        
+        #total-aluguel { font-size: 24px; font-weight: 700; color: #1c1e21; text-align: right; }
+    </style>
+</head>
+<body>
+    <a href="/home.html">← Voltar para Início</a>
+    <h1>Registrar Novo Aluguel</h1>
+
+    <form id="form-aluguel" class="form-container">
+        <h2>1. Dados Principais</h2>
+        <div class="form-row">
+            <div>
+                <label for="pessoa_id">Cliente:</label>
+                <select id="pessoa_id" required>
+                    <option value="">Carregando clientes...</option>
+                </select>
+            </div>
+            <div>
+                <label for="data_prevista_devolucao">Data Prevista Devolução:</label>
+                <input type="date" id="data_prevista_devolucao" required>
+            </div>
+        </div>
+
+        <h2 style="margin-top: 30px;">2. Equipamentos</h2>
+        <div class="form-row">
+            <div>
+                <label for="equipamento_select">Equipamento:</label>
+                <select id="equipamento_select">
+                    <option value="">Carregando equipamentos...</option>
+                </select>
+            </div>
+            <div style="flex: 0; align-self: flex-end;">
+                <button type="button" id="btn-adicionar">Adicionar à Lista</button>
+            </div>
+        </div>
+
+        <h2 style="margin-top: 30px;">3. Itens do Aluguel</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Equipamento</th>
+                    <th>Valor Diária</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody id="corpo-tabela-itens">
+                </tbody>
+        </table>
+
+        <div style="margin-top: 30px;">
+            <p id="total-aluguel">Valor Total (diária): R$ 0,00</p>
+            <button type="submit">Salvar Aluguel</button>
+        </div>
+    </form>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Referências do Formulário
+            const form = document.getElementById('form-aluguel');
+            const selectCliente = document.getElementById('pessoa_id');
+            const inputDataDevolucao = document.getElementById('data_prevista_devolucao');
+            const selectEquipamento = document.getElementById('equipamento_select');
+            const btnAdicionar = document.getElementById('btn-adicionar');
+            const corpoTabelaItens = document.getElementById('corpo-tabela-itens');
+            const totalAluguelDisplay = document.getElementById('total-aluguel');
+
+            // --- Variáveis de Estado ---
+            let itensNoAluguel = []; // Nosso "carrinho"
+            let listaDeEquipamentos = []; // Para guardar os dados dos equipamentos
+            let usuarioLogado = null;
+
+            // --- FUNÇÃO 1: Checar se o usuário está logado ---
+            const checarLogin = () => {
+                const usuarioData = localStorage.getItem('usuario');
+                if (!usuarioData) {
+                    alert('Você precisa estar logado para registrar um aluguel.');
+                    window.location.href = '/index.html'; // Volta pro login
+                } else {
+                    usuarioLogado = JSON.parse(usuarioData);
+                }
+            };
+            
+            // --- FUNÇÃO 2: Carregar Clientes (Pessoas) ---
+            const carregarClientes = async () => {
+                try {
+                    const response = await fetch('/api/pessoas');
+                    if (!response.ok) throw new Error('Erro ao buscar clientes');
+                    const pessoas = await response.json();
+                    
+                    selectCliente.innerHTML = '<option value="">Selecione um cliente...</option>';
+                    pessoas.forEach(pessoa => {
+                        const option = document.createElement('option');
+                        option.value = pessoa.pessoa_id;
+                        option.textContent = `${pessoa.nome} (CPF: ${pessoa.cpf})`;
+                        selectCliente.appendChild(option);
+                    });
+                } catch (error) {
+                    console.error(error);
+                    selectCliente.innerHTML = '<option value="">Erro ao carregar clientes</option>';
+                }
+            };
+
+            // --- FUNÇÃO 3: Carregar Equipamentos ---
+            const carregarEquipamentos = async () => {
+                try {
+                    const response = await fetch('/api/equipamentos');
+                    if (!response.ok) throw new Error('Erro ao buscar equipamentos');
+                    listaDeEquipamentos = await response.json(); // Salva na variável global
+                    
+                    selectEquipamento.innerHTML = '<option value="">Selecione um equipamento...</option>';
+                    listaDeEquipamentos.forEach(equip => {
+                        const option = document.createElement('option');
+                        option.value = equip.equipamento_id;
+                        // Guarda a descrição e o valor nos atributos 'data'
+                        option.dataset.descricao = equip.descricao;
+                        option.dataset.valor = equip.valor_diaria;
+                        option.textContent = `${equip.descricao} (R$ ${equip.valor_diaria}/dia)`;
+                        selectEquipamento.appendChild(option);
+                    });
+                } catch (error) {
+                    console.error(error);
+                    selectEquipamento.innerHTML = '<option value="">Erro ao carregar</option>';
+                }
+            };
+
+            // --- FUNÇÃO 4: Recalcular o Valor Total ---
+            const atualizarTotal = () => {
+                const total = itensNoAluguel.reduce((acc, item) => {
+                    return acc + parseFloat(item.valor_diaria_no_aluguel);
+                }, 0);
+                totalAluguelDisplay.textContent = `Valor Total (diária): R$ ${total.toFixed(2)}`;
+                return total;
+            };
+
+            // --- FUNÇÃO 5: Renderizar a Tabela de Itens ---
+            const renderizarItens = () => {
+                corpoTabelaItens.innerHTML = ''; // Limpa a tabela
+                
+                if (itensNoAluguel.length === 0) {
+                    corpoTabelaItens.innerHTML = '<tr><td colspan="3" style="text-align:center;">Nenhum equipamento adicionado.</td></tr>';
+                    return;
+                }
+
+                itensNoAluguel.forEach((item, index) => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${item.descricao}</td>
+                        <td>R$ ${parseFloat(item.valor_diaria_no_aluguel).toFixed(2)}</td>
+                        <td class="action-buttons">
+                            <button type="button" class="btn-remover" data-index="${index}">Remover</button>
+                        </td>
+                    `;
+                    corpoTabelaItens.appendChild(tr);
+                });
+            };
+
+            // --- EVENTO 1: Adicionar Equipamento ao "Carrinho" ---
+            btnAdicionar.addEventListener('click', () => {
+                const selectedOption = selectEquipamento.options[selectEquipamento.selectedIndex];
+                if (!selectedOption || !selectedOption.value) {
+                    alert('Selecione um equipamento.');
+                    return;
+                }
+
+                const novoItem = {
+                    equipamento_id: parseInt(selectedOption.value),
+                    descricao: selectedOption.dataset.descricao,
+                    valor_diaria_no_aluguel: parseFloat(selectedOption.dataset.valor)
+                };
+
+                itensNoAluguel.push(novoItem);
+                renderizarItens();
+                atualizarTotal();
+            });
+
+            // --- EVENTO 2: Remover Equipamento do "Carrinho" ---
+            corpoTabelaItens.addEventListener('click', (event) => {
+                if (event.target.classList.contains('btn-remover')) {
+                    const indexParaRemover = parseInt(event.target.dataset.index);
+                    itensNoAluguel.splice(indexParaRemover, 1); // Remove o item do array
+                    renderizarItens();
+                    atualizarTotal();
+                }
+            });
+
+            // --- EVENTO 3: Salvar o Aluguel (Enviar para API) ---
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                
+                // *** PRÓXIMO PASSO ESTÁ AQUI ***
+                // Por enquanto, este código apenas vai mostrar o que *seria* enviado.
+                // O back-end (index.js) ainda não tem a rota '/api/alugueis'.
+
+                const dadosParaEnviar = {
+                    pessoa_id: parseInt(selectCliente.value),
+                    usuario_id: usuarioLogado.usuario_id,
+                    data_prevista_devolucao: inputDataDevolucao.value,
+                    valor_total: atualizarTotal(),
+                    itens: itensNoAluguel // Array de { equipamento_id, valor_diaria_no_aluguel }
+                };
+
+                if (!dadosParaEnviar.pessoa_id) {
+                    alert('Selecione um cliente.'); return;
+                }
+                if (!dadosParaEnviar.data_prevista_devolucao) {
+                    alert('Selecione uma data de devolução.'); return;
+                }
+                if (dadosParaEnviar.itens.length === 0) {
+                    alert('Adicione pelo menos um equipamento.'); return;
+                }
+
+                // Log para debug (podemos remover depois)
+                console.log('Dados que serão enviados para a API:', JSON.stringify(dadosParaEnviar, null, 2));
+                
+                alert('PRÓXIMO PASSO: Agora precisamos criar a rota POST /api/alugueis no index.js para receber estes dados!');
+                
+                // *** DESCOMENTE AS LINHAS ABAIXO QUANDO A API ESTIVER PRONTA ***
+                /*
+                try {
+                    const response = await fetch('/api/alugueis', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(dadosParaEnviar)
+                    });
+                    
+                    if (!response.ok) {
+                        const erro = await response.json();
+                        throw new Error(erro.error || 'Erro ao salvar aluguel');
+                    }
+                    
+                    alert('Aluguel salvo com sucesso!');
+                    window.location.href = '/home.html'; // Volta para a home
+                    
+                } catch (error) {
+                    console.error('Erro ao salvar aluguel:', error);
+                    alert(`Não foi possível salvar: ${error.message}`);
+                }
+                */
+            });
+
+            // --- INICIALIZAÇÃO ---
+            checarLogin();
+            carregarClientes();
+            carregarEquipamentos();
+            renderizarItens(); // Renderiza a tabela vazia
+        });
+    </script>
+</body>
+</html>

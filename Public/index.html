@@ -93,7 +93,6 @@
             <button type="submit" class="btn-login">Entrar</button>
         </form>
         
-        <!-- Requisito: Botão para cadastrar novo usuário -->
         <a href="/usuarios.html" class="link-cadastro">Cadastrar novo usuário</a>
         
         <p id="error-message"></p>
@@ -103,6 +102,9 @@
         document.addEventListener('DOMContentLoaded', () => {
             const formLogin = document.getElementById('form-login');
             const errorMessage = document.getElementById('error-message');
+
+            // Limpa o usuário salvo ao chegar na tela de login
+            localStorage.removeItem('usuario');
 
             formLogin.addEventListener('submit', async (event) => {
                 event.preventDefault(); // Impede o recarregamento da página
@@ -126,6 +128,12 @@
                     if (response.ok && result.success) {
                         // Login bem-sucedido!
                         alert(`Bem-vindo, ${result.usuario.nome}!`);
+                        
+                        // *** MUDANÇA IMPORTANTE AQUI ***
+                        // Salva os dados do usuário no "localStorage" do navegador
+                        // para que outras páginas saibam quem está logado.
+                        localStorage.setItem('usuario', JSON.stringify(result.usuario));
+                        
                         // Redireciona para a página principal do sistema
                         window.location.href = '/home.html';
                     } else {
