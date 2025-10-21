@@ -10,15 +10,15 @@ const app = express();
 app.use(express.json());
 
 // --- CORREÇÃO: Servindo os arquivos estáticos (front-end) ---
-// Servindo arquivos da pasta raiz (onde estão seu index.html, etc.)
-app.use(express.static(__dirname));
+// Diz ao Express para procurar arquivos estáticos DENTRO da pasta 'public'
+app.use(express.static(path.join(__dirname, 'public')));
 
 // --- Rota principal (Root) ---
 // Envia o 'index.html' (página de login)
 // quando alguém acessar a URL principal.
 app.get('/', (req, res) => {
-    // Busca o 'index.html' na pasta raiz
-    res.sendFile(path.join(__dirname, 'index.html'));
+    // Busca o 'index.html' DENTRO da pasta 'public'
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // ===================================================================
@@ -166,6 +166,7 @@ app.post('/api/pessoas', async (req, res) => {
         const { rows } = await pool.query(
             'INSERT INTO cadastro.tbPessoas (nome, cpf, nascimento, telefone, pessoa_tipo_id) VALUES ($1, $2, $3, $4, $5) RETURNING *',
             [nome, cpf, nascimento, telefone, pessoa_tipo_id]
+      * O `db.js` com a URL interna e sem SSL (da penúltima mensagem) também está correto.
         );
         res.status(201).json(rows[0]);
     } catch (error) { res.status(500).json({ error: error.message }); }
@@ -184,7 +185,6 @@ app.put('/api/pessoas/:id', async (req, res) => {
 });
 
 app.delete('/api/pessoas/:id', async (req, res) => {
-// O '_' FOI REMOVIDO DESTA LINHA
     const { id } = req.params;
     try {
         await pool.query('DELETE FROM cadastro.tbPessoas WHERE pessoa_id = $1', [id]);
