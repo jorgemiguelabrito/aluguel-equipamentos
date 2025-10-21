@@ -13,7 +13,18 @@ app.use(express.json());
 // Esta é a forma mais robusta de dizer ao Express onde estão seus arquivos HTML.
 // Ele cria um caminho absoluto para a pasta 'public', que funciona em qualquer servidor.
 app.use(express.static(path.join(__dirname, 'public')));
+// --- Rota principal (Root) ---
+// Adicione esta rota para consertar o "Cannot GET /"
+// Ela diz ao servidor para enviar o 'index.html' (página de login)
+// quando alguém acessar a URL principal.
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
+// ===================================================================
+// =================== ROTAS DA API (O "CÉREBRO") ====================
+// ===================================================================
+// ... (deixe o resto das suas rotas de API aqui) ...
 
 // ===================================================================
 // =================== ROTAS DA API (O "CÉREBRO") ====================
