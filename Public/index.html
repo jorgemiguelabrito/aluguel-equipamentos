@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Sistema de Aluguel</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f2f5;
+        }
+        .login-container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        h1 {
+            color: #1c1e21;
+            margin-bottom: 25px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            box-sizing: border-box;
+            border: 1px solid #dddfe2;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        .btn-login {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        .btn-login:hover {
+            background-color: #0056b3;
+        }
+        .link-cadastro {
+            display: block;
+            color: #007bff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+        .link-cadastro:hover {
+            text-decoration: underline;
+        }
+        #error-message {
+            color: #dc3545;
+            margin-top: 15px;
+            font-weight: 500;
+            display: none; /* Começa escondido */
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <h1>Sistema de Aluguel</h1>
+        
+        <form id="form-login">
+            <div class="form-group">
+                <label for="login">Login:</label>
+                <input type="text" id="login" name="login" required>
+            </div>
+            <div class="form-group">
+                <label for="senha">Senha:</label>
+                <input type="password" id="senha" name="senha" required>
+            </div>
+            <button type="submit" class="btn-login">Entrar</button>
+        </form>
+        
+        <!-- Requisito: Botão para cadastrar novo usuário -->
+        <a href="/usuarios.html" class="link-cadastro">Cadastrar novo usuário</a>
+        
+        <p id="error-message"></p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const formLogin = document.getElementById('form-login');
+            const errorMessage = document.getElementById('error-message');
+
+            formLogin.addEventListener('submit', async (event) => {
+                event.preventDefault(); // Impede o recarregamento da página
+
+                const login = document.getElementById('login').value;
+                const senha = document.getElementById('senha').value;
+                
+                errorMessage.style.display = 'none'; // Esconde a mensagem de erro antiga
+
+                try {
+                    const response = await fetch('/api/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ login, senha })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        // Login bem-sucedido!
+                        alert(`Bem-vindo, ${result.usuario.nome}!`);
+                        // Redireciona para a página principal do sistema
+                        window.location.href = '/home.html';
+                    } else {
+                        // Login falhou, mostra a mensagem de erro da API
+                        errorMessage.textContent = result.message || 'Ocorreu um erro.';
+                        errorMessage.style.display = 'block';
+                    }
+
+                } catch (error) {
+                    console.error('Erro ao tentar fazer login:', error);
+                    errorMessage.textContent = 'Não foi possível conectar ao servidor.';
+                    errorMessage.style.display = 'block';
+                }
+            });
+        });
+    </script>
+
+</body>
+</html>

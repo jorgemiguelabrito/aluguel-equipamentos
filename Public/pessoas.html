@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cadastro de Pessoas</title>
+    <!-- Cole o mesmo CSS das outras páginas aqui para manter o padrão -->
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 20px; background-color: #f0f2f5; color: #333; }
+        h1, h2 { color: #1c1e21; }
+        a { color: #007bff; text-decoration: none; font-weight: 600; display: inline-block; margin-bottom: 20px; }
+        form { background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 30px; }
+        form div { margin-bottom: 15px; }
+        form label { display: block; margin-bottom: 5px; font-weight: 600; }
+        form input, form select { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #dddfe2; border-radius: 6px; font-size: 16px; }
+        .form-buttons { display: flex; gap: 10px; }
+        form button { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; }
+        button[type="submit"] { background-color: #007bff; color: white; }
+        #btn-cancelar { background-color: #f0f2f5; color: #333; }
+        table { width: 100%; border-collapse: collapse; background-color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden; }
+        table th, table td { padding: 12px 15px; border-bottom: 1px solid #dddfe2; text-align: left; }
+        table th { background-color: #f0f2f5; font-weight: 600; }
+        .action-buttons button { padding: 6px 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; margin-right: 5px; }
+        .btn-editar { background-color: #ffc107; color: #333; }
+        .btn-excluir { background-color: #dc3545; color: white; }
+    </style>
+</head>
+<body>
+    <a href="/home.html">← Voltar para Início</a>
+    <h1>Gestão de Pessoas (Clientes/Fornecedores)</h1>
+
+    <form id="form-pessoa">
+        <input type="hidden" id="pessoa_id">
+        <div><label for="nome">Nome Completo:</label><input type="text" id="nome" required></div>
+        <div><label for="cpf">CPF:</label><input type="text" id="cpf" required></div>
+        <div><label for="nascimento">Data de Nascimento:</label><input type="date" id="nascimento"></div>
+        <div><label for="telefone">Telefone:</label><input type="text" id="telefone"></div>
+        <div>
+            <label for="pessoa_tipo_id">Tipo:</label>
+            <select id="pessoa_tipo_id" required>
+                <!-- Os tipos serão carregados aqui pelo JavaScript -->
+            </select>
+        </div>
+        <div class="form-buttons">
+            <button type="submit">Salvar</button>
+            <button type="button" id="btn-cancelar">Cancelar</button>
+        </div>
+    </form>
+
+    <h2>Pessoas Cadastradas</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nome</th>
+                <th>CPF</th>
+                <th>Telefone</th>
+                <th>Tipo</th>
+                <th>Ações</th>
+            </tr>
+        </thead>
+        <tbody id="corpo-tabela"></tbody>
+    </table>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('form-pessoa');
+            const corpoTabela = document.getElementById('corpo-tabela');
+            const campoId = document.getElementById('pessoa_id');
+            const campoNome = document.getElementById('nome');
+            const campoCpf = document.getElementById('cpf');
+            const campoNascimento = document.getElementById('nascimento');
+            const campoTelefone = document.getElementById('telefone');
+            const campoTipo = document.getElementById('pessoa_tipo_id');
+            const btnSubmit = form.querySelector('button[type="submit"]');
+
+            const carregarTipos = async () => {
+                try {
+                    const response = await fetch('/api/pessoatipos');
+                    const tipos = await response.json();
+                    campoTipo.innerHTML = '<option value="">Selecione um tipo...</option>'; // Opção padrão
+                    tipos.forEach(tipo => {
+                        const option = document.createElement('option');
+                        option.value = tipo.pessoa_tipo_id;
+                        option.textContent = tipo.descricao;
+                        campoTipo.appendChild(option);
+                    });
+                } catch (error) {
+                    alert('Erro ao carregar os tipos de pessoa.');
+                }
+            };
+            
+            const carregarPessoas = async () => {
+                try {
+                    const response = await fetch('/api/pessoas');
+                    const pessoas = await response.json();
+                    corpoTabela.innerHTML = '';
+                    pessoas.forEach(pessoa => {
+                        const dataNasc = pessoa.nascimento ? new Date(pessoa.nascimento).toLocaleDateString('pt-BR') : 'N/A';
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${pessoa.pessoa_id}</td>
+                            <td>${pessoa.nome}</td>
+                            <td>${pessoa.cpf}</td>
+                            <td>${pessoa.telefone || 'N/A'}</td>
+                            <td>${pessoa.tipo_descricao}</td>
+                            <td class="action-buttons">
+                                <button class="btn-editar" data-pessoa='${JSON.stringify(pessoa)}'>Editar</button>
+                                <button class="btn-excluir" data-id="${pessoa.pessoa_id}">Excluir</button>
+                            </td>
+                        `;
+                        corpoTabela.appendChild(tr);
+                    });
+                } catch (error) {
+                    alert('Erro ao carregar pessoas.');
+                }
+            };
+
+            const limparFormulario = () => {
+                form.reset();
+                campoId.value = '';
+                btnSubmit.textContent = 'Salvar';
+            };
+
+            const preencherFormulario = (pessoa) => {
+                campoId.value = pessoa.pessoa_id;
+                campoNome.value = pessoa.nome;
+                campoCpf.value = pessoa.cpf;
+                // Formata a data para o formato YYYY-MM-DD que o input[type=date] espera
+                campoNascimento.value = pessoa.nascimento ? pessoa.nascimento.split('T')[0] : '';
+                campoTelefone.value = pessoa.telefone;
+                // A API de pessoas não retorna o tipo_id, então não podemos preencher o select aqui.
+                // O ideal seria a API retornar o ID do tipo também.
+                // Por enquanto, o usuário terá que selecionar novamente.
+                btnSubmit.textContent = 'Atualizar';
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            };
+
+            const excluirPessoa = async (id) => {
+                if (!confirm('Tem certeza que deseja excluir esta pessoa?')) return;
+                try {
+                    const response = await fetch(`/api/pessoas/${id}`, { method: 'DELETE' });
+                    if (!response.ok) {
+                        const erro = await response.json();
+                        throw new Error(erro.error);
+                    }
+                    carregarPessoas();
+                } catch (error) {
+                    alert(`Não foi possível excluir: ${error.message}`);
+                }
+            };
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const id = campoId.value;
+                const body = {
+                    nome: campoNome.value,
+                    cpf: campoCpf.value,
+                    nascimento: campoNascimento.value || null,
+                    telefone: campoTelefone.value || null,
+                    pessoa_tipo_id: campoTipo.value
+                };
+
+                let url = '/api/pessoas';
+                let method = 'POST';
+                if (id) {
+                    url = `/api/pessoas/${id}`;
+                    method = 'PUT';
+                }
+
+                try {
+                    const response = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+                    if (!response.ok) {
+                        const erro = await response.json();
+                        throw new Error(erro.error);
+                    }
+                    limparFormulario();
+                    carregarPessoas();
+                } catch (error) {
+                    alert(`Erro ao salvar: ${error.message}`);
+                }
+            });
+
+            corpoTabela.addEventListener('click', (e) => {
+                const target = e.target;
+                if (target.classList.contains('btn-editar')) {
+                    const pessoa = JSON.parse(target.dataset.pessoa);
+                    preencherFormulario(pessoa);
+                }
+                if (target.classList.contains('btn-excluir')) {
+                    excluirPessoa(target.dataset.id);
+                }
+            });
+
+            document.getElementById('btn-cancelar').addEventListener('click', limparFormulario);
+            
+            // Carrega os dados iniciais ao abrir a página
+            carregarTipos();
+            carregarPessoas();
+        });
+    </script>
+</body>
+</html>

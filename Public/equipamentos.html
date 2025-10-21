@@ -1,0 +1,95 @@
+    <!DOCTYPE html>
+    <html lang="pt-br">
+    <head>
+        <meta charset="UTF-8">
+        <title>Cadastro de Equipamentos</title>
+        <style>/* Cole o mesmo CSS da página de usuários aqui para manter o padrão visual */ body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; margin: 20px; background-color: #f0f2f5; color: #333; } h1, h2 { color: #1c1e21; } form { background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 30px; } form div { margin-bottom: 15px; } form label { display: block; margin-bottom: 5px; font-weight: 600; } form input { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #dddfe2; border-radius: 6px; font-size: 16px; } .form-buttons { display: flex; gap: 10px; } form button { padding: 10px 15px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; } button[type="submit"] { background-color: #007bff; color: white; } #btn-cancelar { background-color: #f0f2f5; color: #333; } table { width: 100%; border-collapse: collapse; background-color: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden; } table th, table td { padding: 12px 15px; border-bottom: 1px solid #dddfe2; text-align: left; } table th { background-color: #f0f2f5; font-weight: 600; } .action-buttons button { padding: 6px 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; margin-right: 5px; } .btn-editar { background-color: #ffc107; color: #333; } .btn-excluir { background-color: #dc3545; color: white; } </style>
+    </head>
+    <body>
+        <a href="/home.html">Voltar para Início</a>
+        <h1>Gestão de Equipamentos</h1>
+        <form id="form-equipamento">
+            <input type="hidden" id="equipamento_id">
+            <div><label for="descricao">Descrição:</label><input type="text" id="descricao" required></div>
+            <div><label for="valor_diaria">Valor da Diária (Ex: 150.50):</label><input type="number" step="0.01" id="valor_diaria" required></div>
+            <div class="form-buttons">
+                <button type="submit">Salvar</button>
+                <button type="button" id="btn-cancelar">Cancelar</button>
+            </div>
+        </form>
+        <h2>Equipamentos Cadastrados</h2>
+        <table>
+            <thead>
+                <tr><th>ID</th><th>Descrição</th><th>Valor Diária</th><th>Ações</th></tr>
+            </thead>
+            <tbody id="corpo-tabela"></tbody>
+        </table>
+        <script>
+            // JavaScript para Equipamentos (muito parecido com o de usuários)
+            document.addEventListener('DOMContentLoaded', () => {
+                const form = document.getElementById('form-equipamento'), corpoTabela = document.getElementById('corpo-tabela'), campoId = document.getElementById('equipamento_id'), campoDescricao = document.getElementById('descricao'), campoValor = document.getElementById('valor_diaria'), btnSubmit = form.querySelector('button[type="submit"]');
+                const carregar = async () => { try { const response = await fetch('/api/equipamentos'); const data = await response.json(); corpoTabela.innerHTML = ''; data.forEach(item => { const tr = document.createElement('tr'); tr.innerHTML = `<td>${item.equipamento_id}</td><td>${item.descricao}</td><td>R$ ${item.valor_diaria}</td><td class="action-buttons"><button class="btn-editar" data-id="${item.equipamento_id}" data-descricao="${item.descricao}" data-valor="${item.valor_diaria}">Editar</button><button class="btn-excluir" data-id="${item.equipamento_id}">Excluir</button></td>`; corpoTabela.appendChild(tr); }); } catch (error) { alert('Erro ao carregar equipamentos.'); } };
+                const limpar = () => { form.reset(); campoId.value = ''; btnSubmit.textContent = 'Salvar'; };
+                const preencher = (id, desc, valor) => { campoId.value = id; campoDescricao.value = desc; campoValor.value = valor; btnSubmit.textContent = 'Atualizar'; window.scrollTo({ top: 0, behavior: 'smooth' }); };
+                const excluir = async (id) => { if (!confirm(`Tem certeza?`)) return; try { await fetch(`/api/equipamentos/${id}`, { method: 'DELETE' }); carregar(); } catch (error) { alert('Erro ao excluir.'); } };
+                form.addEventListener('submit', async (e) => { e.preventDefault(); const id = campoId.value; const body = { descricao: campoDescricao.value, valor_diaria: campoValor.value }; let url = '/api/equipamentos', method = 'POST'; if (id) { url = `/api/equipamentos/${id}`; method = 'PUT'; } try { await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }); limpar(); carregar(); } catch (error) { alert('Erro ao salvar.'); } });
+                corpoTabela.addEventListener('click', (e) => { const target = e.target; if (target.classList.contains('btn-editar')) { preencher(target.dataset.id, target.dataset.descricao, target.dataset.valor); } if (target.classList.contains('btn-excluir')) { excluir(target.dataset.id); } });
+                document.getElementById('btn-cancelar').addEventListener('click', limpar);
+                carregar();
+            });
+        </script>
+    </body>
+    </html>
+    ```
+
+##### **Cadastro 3: Pessoas/Clientes (`cadastro.tbPessoas`)**
+
+Repita o processo para Pessoas. É um ótimo exercício para fixar o conhecimento. Se preferir, posso te passar o código pronto também.
+
+---
+
+#### **Fase 5: O "Algo a Mais!" - Segurança com Bcrypt (Recomendado)**
+
+Para ganhar o ponto de inovação, vamos proteger as senhas.
+
+1.  **Instale o Bcrypt:** No terminal, dentro da pasta do projeto, execute:
+    `npm install bcryptjs`
+
+2.  **Modifique o `index.js`:**
+    * No topo do arquivo, adicione: `const bcrypt = require('bcryptjs');`
+    * **Na rota de INCLUIR usuário (`POST /api/usuarios`)**, troque a query por esta:
+        ```javascript
+        const salt = await bcrypt.genSalt(10);
+        const hashSenha = await bcrypt.hash(senha, salt); // Criptografa a senha
+        const { rows } = await pool.query(
+            'INSERT INTO seguranca.tbUsuarios (nome, login, senha) VALUES ($1, $2, $3) RETURNING *',
+            [nome, login, hashSenha] // Salva o hash, não a senha!
+        );
+        ```
+    * **Na rota de LOGIN (`POST /api/login`)**, troque a query por esta:
+        ```javascript
+        // Primeiro, busca o usuário pelo login
+        const { rows } = await pool.query('SELECT * FROM seguranca.tbUsuarios WHERE login = $1', [login]);
+        if (rows.length === 0) { // Se não achou o login
+            return res.status(401).json({ success: false, message: 'Login ou senha inválidos' });
+        }
+        const usuario = rows[0];
+        // Compara a senha digitada com o hash salvo no banco
+        const senhaValida = await bcrypt.compare(senha, usuario.senha);
+        if (senhaValida) {
+            // Senha correta, login OK
+            res.json({ success: true, usuario: { usuario_id: usuario.usuario_id, nome: usuario.nome } });
+        } else {
+            // Senha incorreta
+            res.status(401).json({ success: false, message: 'Login ou senha inválidos' });
+        }
+        ```
+
+---
+
+#### **Fase 6: Publicação Final no Render**
+
+1.  **Crie o arquivo `.gitignore`:** Na pasta principal do seu projeto, crie um arquivo com o nome exato `.gitignore` e coloque o seguinte texto dentro dele:
+    ```
+    node_modules/
+    
