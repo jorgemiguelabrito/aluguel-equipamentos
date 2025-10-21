@@ -141,7 +141,6 @@ app.delete('/api/equipamentos/:id', async (req, res) => {
 // --- CRUD Pessoas (Item 6 da avaliação) ---
 app.get('/api/pessoas', async (req, res) => {
     try {
-        // *** CORREÇÃO AQUI: Removido o 's' que estava sobrando ***
         const query = `
             SELECT p.pessoa_id, p.nome, p.cpf, p.nascimento, p.telefone, t.descricao AS tipo_pessoa
             FROM cadastro.tbPessoas p
@@ -176,7 +175,8 @@ app.put('/api/pessoas/:id', async (req, res) => {
     const { id } = req.params;
     const { nome, cpf, nascimento, telefone, pessoa_tipo_id } = req.body;
     try {
-      mande o código para min com as altereção devidas   const { rows } = await pool.query(
+        // A FRASE PERDIDA FOI REMOVIDA DAQUI
+        const { rows } = await pool.query(
             'UPDATE cadastro.tbPessoas SET nome = $1, cpf = $2, nascimento = $3, telefone = $4, pessoa_tipo_id = $5 WHERE pessoa_id = $6 RETURNING *',
             [nome, cpf, nascimento, telefone, pessoa_tipo_id, id]
         );
