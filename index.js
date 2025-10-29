@@ -1,7 +1,7 @@
 // --- Importação dos Módulos Essenciais ---
 const express = require('express');
 const path = require('path'); // Módulo para lidar com caminhos de arquivos
-const bcrypt = require('bcryptjs'); // Para criptografar senhas
+// const bcrypt = require('bcryptjs'); // REMOVIDO
 const { pool } = require('./db.js'); // Nossa conexão com o banco de dados
 
 const app = express();
@@ -19,7 +19,7 @@ app.get('/', (req, res) => {
 // =================== ROTAS DA API (O "CÉREBRO") ====================
 // ===================================================================
 
-// --- Rota de Login (COM BCRYPT) ---
+// --- Rota de Login (SIMPLES, SEM BCRYPT) ---
 app.post('/api/login', async (req, res) => {
     const { login, senha } = req.body;
     try {
@@ -33,7 +33,9 @@ app.post('/api/login', async (req, res) => {
         }
         
         const usuario = rows[0];
-        const senhaValida = await bcrypt.compare(senha, usuario.senha);
+        
+        // MUDANÇA AQUI: Comparação direta de texto puro
+        const senhaValida = (senha === usuario.senha); 
         
         if (senhaValida) {
             res.json({ success: true, usuario: { usuario_id: usuario.usuario_id, nome: usuario.nome } });
@@ -56,15 +58,14 @@ app.get('/api/usuarios', async (req, res) => {
     }
 });
 
-// [C]reate - Incluir usuário (COM BCRYPT)
+// [C]reate - Incluir usuário (SIMPLES, SEM BCRYPT)
 app.post('/api/usuarios', async (req, res) => {
     const { nome, login, senha } = req.body;
     try {
-        const salt = await bcrypt.genSalt(10);
-        const hashSenha = await bcrypt.hash(senha, salt);
+        // MUDANÇA AQUI: Inserindo a senha em texto puro
         const { rows } = await pool.query(
             'INSERT INTO seguranca.tbUsuarios (nome, login, senha) VALUES ($1, $2, $3) RETURNING usuario_id, nome, login',
-            [nome, login, hashSenha]
+            [nome, login, senha] // Senha vai direto
         );
         res.status(201).json(rows[0]);
     } catch (error) {
@@ -138,8 +139,11 @@ app.delete('/api/equipamentos/:id', async (req, res) => {
 // --- CRUD Pessoas ---
 app.get('/api/pessoas', async (req, res) => {
     try {
+        // CORREÇÃO: Mudei "t.descricao AS tipo_pessoa" para "t.descricao AS tipo_descricao"
+        // para bater com o que seu frontend espera em 'pessoas.html'
         const query = `
-            SELECT p.pessoa_id, p.nome, p.cpf, p.nascimento, p.telefone, t.descricao AS tipo_pessoa
+            SELECT p.pessoa_id, p.nome, p.cpf, p.nascimento, p.telefone, 
+                   t.descricao AS tipo_descricao, t.pessoa_tipo_id 
             FROM cadastro.tbPessoas p
             JOIN dominio.tbPessoaTipo t ON p.pessoa_tipo_id = t.pessoa_tipo_id
             ORDER BY p.nome ASC
@@ -232,4 +236,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Servidor rodando com sucesso na porta ${PORT}`);
 });
-
